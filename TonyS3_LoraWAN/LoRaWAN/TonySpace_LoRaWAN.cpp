@@ -134,7 +134,6 @@ bool TONY_LORA::getDeveui(char * deveui, uint16_t timeout)
 	else return 0;
 }
 
-
 bool TONY_LORA::getAppeui(char * appeui, uint16_t timeout)
 {
 	String buff = "";
@@ -151,6 +150,55 @@ bool TONY_LORA::getAppkey(char * appkey, uint16_t timeout)
 	else return 0;
 }
 
+bool TONY_LORA::getBandFrequency(char* band_freq, uint16_t timeout)
+{
+	String buff = "";
+	LoRaSerial->print("rf get_freq");
+	if(getRespond(band_freq, timeout)) return 1;
+	else return 0;
+}
+
+bool TONY_LORA::getTxPower(char* txPower, uint16_t timeout)
+{
+	String buff = "";
+	LoRaSerial->print("rf get_pwr");
+	if(getRespond(txPower, timeout)) return 1;
+	else return 0;
+}
+
+bool TONY_LORA::getSpredingFactor(char* sf, uint16_t timeout)
+{
+	String buff = "";
+	LoRaSerial->print("rf get_sf");
+	if(getRespond(sf, timeout)) return 1;
+	else return 0;
+}
+
+bool TONY_LORA::getBandWidth(char* bw, uint16_t timeout)
+{
+	String buff = "";
+	LoRaSerial->print("rf get_bw");
+	if(getRespond(bw, timeout)) return 1;
+	else return 0;
+}
+
+bool TONY_LORA::getDataRate(char* dataRate, uint16_t timeout)
+{
+	String buff = "";
+	LoRaSerial->print("rf get_bw");
+	if(getRespond(dataRate, timeout)) return 1;
+	else return 0;
+}
+
+bool TONY_LORA::getSyncWord(char* syncword, uint16_t timeout)
+{
+	String buff = "";
+	LoRaSerial->print("rf get_sync");
+	if(getRespond(syncword, timeout)) return 1;
+	else return 0;
+}
+
+
 bool TONY_LORA::sendAndGet(String cmd, char* res, uint16_t timeout) {
 	LoRaSerial->print(cmd);
 	if(getRespond(res, timeout)) return 1;
@@ -158,15 +206,35 @@ bool TONY_LORA::sendAndGet(String cmd, char* res, uint16_t timeout) {
 	return 0;
 }
 
-// void TONY_LORA::getModuleInfo() {
-// 	char deveui[50];
-// 	char hardwareModel[50];
-// 	// char appeui[50]
-// 	getDeveui(deveui, 1000);
-// 	Serial.println(deveui);
-// 	// sendAndGet("sip get_hw_model", hardwareModel, 1000);
-// 	// Serial.println(hardwareModel);
-// }
+void TONY_LORA::getModuleInfo() {
+	char response[50];
+	// char appeui[50]
+	sendAndGet("sip get_hw_model", response, 1000);
+	Serial.print("HW model: ");
+	Serial.println(response);
+	sendAndGet("sip get_ver", response, 1000);
+	Serial.print("HW version: ");
+	Serial.println(response);
+	getDeveui(response, 1000);
+	Serial.print("EUI: ");
+	Serial.println(response);
+}
+
+void TONY_LORA::getConfig(){
+	char response[50];
+
+	getBandFrequency(response, 1000);
+	Serial.print("Freq: ");
+	Serial.println(response);
+
+	getTxPower(response, 1000);
+	Serial.print("Tx Power: ");
+	Serial.println(response);
+
+	getSpredingFactor(response, 1000);
+	Serial.print("Spreading Factor: ");
+	Serial.println(response);
+}
 
 bool TONY_LORA::joinOTAA(uint16_t timeout)
 {
@@ -224,7 +292,6 @@ bool TONY_LORA::setAppeui(String appeui, uint16_t timeout)
 	else return 0;	
 }
 
-
 bool TONY_LORA::setAppkey(String appkey, uint16_t timeout)
 { 
 	char buff[7];
@@ -238,6 +305,86 @@ bool TONY_LORA::setAppkey(String appkey, uint16_t timeout)
 	}
 	else return 0;	
 }
+
+bool TONY_LORA::setFrequency(long freq, uint16_t timeout) 
+{
+	if(freq < 862000000 && freq > 932000000) return 0;
+
+	char buff[7];
+	String buffstring = "";
+	LoRaSerial->print("rf set_freq "+freq);
+	if(getRespond(buff, timeout)) 
+	{
+		buffstring = buff;
+		if(buffstring == "Ok") return 1;
+		else if(buffstring != 0) return 0;
+	}
+	else return 0;	
+}
+
+bool TONY_LORA::setTxPower(uint8_t level, uint16_t timeout) 
+{
+	if(level < 2 && level > 20) return 0;
+
+	char buff[7];
+	String buffstring = "";
+	LoRaSerial->print("rf set_pwr "+level);
+	if(getRespond(buff, timeout)) 
+	{
+		buffstring = buff;
+		if(buffstring == "Ok") return 1;
+		else if(buffstring != 0) return 0;
+	}
+	else return 0;	
+}
+
+bool TONY_LORA::setSpreadingFactor(uint8_t sf, uint16_t timeout)
+{
+	if(sf < 6 && sf > 12) return 0;
+
+	char buff[7];
+	String buffstring = "";
+	LoRaSerial->print("rf set_pwr "+sf);
+	if(getRespond(buff, timeout)) 
+	{
+		buffstring = buff;
+		if(buffstring == "Ok") return 1;
+		else if(buffstring != 0) return 0;
+	}
+	else return 0;	
+}
+
+bool TONY_LORA::setSignalBandwidth(uint16_t bw, uint16_t timeout)
+{
+	if(bw != 125 && bw != 250 && bw != 500 ) return 0;
+
+	char buff[7];
+	String buffstring = "";
+	LoRaSerial->print("rf set_bw "+bw);
+	if(getRespond(buff, timeout)) 
+	{
+		buffstring = buff;
+		if(buffstring == "Ok") return 1;
+		else if(buffstring != 0) return 0;
+	}
+	else return 0;	
+}
+
+bool TONY_LORA::setCodingRate(String codingRate, uint16_t timeout)
+{
+	char buff[7];
+	String buffstring = "";
+	LoRaSerial->print("rf set_cr "+codingRate);
+	if(getRespond(buff, timeout)) 
+	{
+		buffstring = buff;
+		if(buffstring == "Ok") return 1;
+		else if(buffstring != 0) return 0;
+	}
+	else return 0;	
+}
+
+// bool TONY_LORA::setCADTimeout()
 
 bool TONY_LORA::stringWrite(uint8_t port, String stringdata, uint16_t timeout)
 {
@@ -306,6 +453,8 @@ bool TONY_LORA::receiveBrodcast(char * receivedata, uint16_t timeout)
 	if(getRespond(buff, timeout)) 
 	{
 		buffstring = buff;
+		// Serial.print("buffer : ");
+		// Serial.println(buffstring);
 		if(buffstring == "Ok")
 		{
 			if(getRespond(receivedata, timeout)) return 1;
@@ -356,4 +505,48 @@ bool TONY_LORA::getRespond(char * respond, uint16_t timeout)
 		currentTime = millis(); 
 		if((currentTime-startTime)>=timeout) return 0;
 	}	
+}
+
+bool TONY_LORA::msgAvailable() {
+	if(LoRaSerial->available()) return 1;
+	else return 0;
+}
+
+String TONY_LORA::readIncomingMsg() {
+	String buff = "";
+	buff = LoRaSerial->readString();
+	if(buff != "")
+	{
+		buff = buff.substring(5);
+		buff.trim();
+	}
+	return buff;
+}
+
+String TONY_LORA::decodingRawMsg(String msg) {
+	char str[200];
+	strcpy(str, msg.c_str());
+    char *token;
+    char *buff[4];  // Array to hold the split tokens
+    int i = 0;
+
+    // Get the first token
+    token = strtok(str, " ");
+
+    // Walk through other tokens
+    while (token != NULL) {
+        buff[i++] = token;  // Store the token in the array
+        token = strtok(NULL, " ");
+    }
+
+	// Serial.println(array[0]); //cmd
+	// Serial.println(array[1]); //data
+	// Serial.println(array[2]); //rssi
+	// Serial.println(array[3]);
+
+	lastMSG = buff[1];
+	lastRSSI = buff[2];
+	lastSNR = buff[3];
+
+	return lastMSG;
 }

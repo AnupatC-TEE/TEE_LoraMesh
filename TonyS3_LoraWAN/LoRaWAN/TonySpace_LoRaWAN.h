@@ -17,21 +17,55 @@ class TONY_LORA
 		bool setDeveui(String deveui, uint16_t timeout = 2000);
 		bool setAppeui(String appeui, uint16_t timeout = 2000);
 		bool setAppkey(String appkey, uint16_t timeout = 2000);
+		bool setFrequency(long freq, uint16_t timeout = 2000);
+		bool setTxPower(uint8_t level, uint16_t timeout = 2000);
+		bool setSpreadingFactor(uint8_t sf, uint16_t timeout);
+		bool setSignalBandwidth(uint16_t bw, uint16_t timeout = 2000);
+		bool setCodingRate(String codingRate, uint16_t timeout);
+		// bool setPremLenght()
+		bool setSyncword(String sync, uint16_t timeout = 1000);
+		// bool setChannelFreq();
+		// bool setCADTimeout();
+		// bool setModemRegistor();
+		// bool setModelConfig();
+
+
 		bool getDeveui(char * deveui, uint16_t timeout = 1000);
 		bool getAppeui(char * appeui, uint16_t timeout = 1000);
 		bool getAppkey(char * appkey, uint16_t timeout = 1000);
+		// bool getLastRssi();
+		bool getBandFrequency(char* band_freq, uint16_t timeout=1000);
+		bool getTxPower(char* txPower, uint16_t timeout=1000);
+		bool getSpredingFactor(char* sf, uint16_t timeout=1000);
+		bool getBandWidth(char* bw, uint16_t timeout=1000);
+		bool getDataRate(char* dataRate, uint16_t timeout=1000);
+		bool getSyncWord(char* syncword, uint16_t timeout=1000);
+
 		bool sendAndGet(String cmd, char* res, uint16_t timeout = 1000);
-		// void getModuleInfo();
+		void getModuleInfo();
+		void getConfig();
+
+
 		bool joinOTAA(uint16_t timeout = 1000);
 		bool joinStatus(uint16_t timeout = 15000);
 		bool stringWrite(uint8_t port, String stringdata, uint16_t timeout = 15000);
-		bool setSyncword(String sync, uint16_t timeout = 1000);
 		bool receiveBrodcast(char * receivedata, uint16_t timeout = 20000);
 		bool sendBrodcast(String stringdata, uint16_t timeout = 2000);	
 		bool getRespond(char * respond, uint16_t timeout);
+		bool msgAvailable();
+		String readIncomingMsg();
+		String decodingRawMsg(String msg);
 
-	private:
+		//low power plan
+		// bool sleep();
+		// bool wakeUp();
+
+		String lastMSG;
+		String lastRSSI;
+		String lastSNR;
+
 		HardwareSerial *LoRaSerial;
+	private:
 		uint8_t pin_RX, 
 				pin_TX,
 				_uart_nr;
@@ -44,6 +78,7 @@ class TONY_LORA
 extern TONY_LORA TonyLORA;
 // extern HardwareSerial LoRaSerial;
 #endif
+
 #endif
 
 
