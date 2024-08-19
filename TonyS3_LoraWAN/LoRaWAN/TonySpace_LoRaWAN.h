@@ -19,10 +19,10 @@ class TONY_LORA
 		bool setAppkey(String appkey, uint16_t timeout = 2000);
 		bool setFrequency(long freq, uint16_t timeout = 2000);
 		bool setTxPower(uint8_t level, uint16_t timeout = 2000);
-		bool setSpreadingFactor(uint8_t sf, uint16_t timeout);
+		bool setSpreadingFactor(uint8_t sf, uint16_t timeout = 2000);
 		bool setSignalBandwidth(uint16_t bw, uint16_t timeout = 2000);
-		bool setCodingRate(String codingRate, uint16_t timeout);
-		// bool setPremLenght()
+		bool setCodingRate(String codingRate, uint16_t timeout = 2000);
+		bool setPremLenght(uint16_t lenght, uint16_t timeout = 2000);
 		bool setSyncword(String sync, uint16_t timeout = 1000);
 		// bool setChannelFreq();
 		// bool setCADTimeout();
@@ -39,6 +39,7 @@ class TONY_LORA
 		bool getSpredingFactor(char* sf, uint16_t timeout=1000);
 		bool getBandWidth(char* bw, uint16_t timeout=1000);
 		bool getDataRate(char* dataRate, uint16_t timeout=1000);
+		bool getPreambleLength(char* lenght, uint16_t timeout=1000);
 		bool getSyncWord(char* syncword, uint16_t timeout=1000);
 
 		bool sendAndGet(String cmd, char* res, uint16_t timeout = 1000);

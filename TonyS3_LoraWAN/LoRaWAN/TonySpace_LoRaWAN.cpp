@@ -122,7 +122,7 @@ bool TONY_LORA::reset()
 {
 	LoRaSerial->print("sip reset");
 	delay(1000);
-	if(LoRaSerial->available()) LoRaSerial->flush();
+	while(LoRaSerial->available() > 0 ) LoRaSerial->read();
 	return 1;
 }
 
@@ -190,6 +190,14 @@ bool TONY_LORA::getDataRate(char* dataRate, uint16_t timeout)
 	else return 0;
 }
 
+bool TONY_LORA::getPreambleLength(char* lenght, uint16_t timeout)
+{
+	String buff = "";
+	LoRaSerial->print("rf get_prlen");
+	if(getRespond(lenght, timeout)) return 1;
+	else return 0;
+}
+
 bool TONY_LORA::getSyncWord(char* syncword, uint16_t timeout)
 {
 	String buff = "";
@@ -231,8 +239,20 @@ void TONY_LORA::getConfig(){
 	Serial.print("Tx Power: ");
 	Serial.println(response);
 
+	getBandWidth(response, 1000);
+	Serial.print("Bandwidth: ");
+	Serial.println(response);
+
 	getSpredingFactor(response, 1000);
 	Serial.print("Spreading Factor: ");
+	Serial.println(response);
+
+	getDataRate(response, 1000);
+	Serial.print("Data rate: ");
+	Serial.println(response);
+
+	getPreambleLength(response, 1000);
+	Serial.print("Preamble length: ");
 	Serial.println(response);
 }
 
@@ -312,7 +332,7 @@ bool TONY_LORA::setFrequency(long freq, uint16_t timeout)
 
 	char buff[7];
 	String buffstring = "";
-	LoRaSerial->print("rf set_freq "+freq);
+	LoRaSerial->print("rf set_freq "+String(freq));
 	if(getRespond(buff, timeout)) 
 	{
 		buffstring = buff;
@@ -328,7 +348,7 @@ bool TONY_LORA::setTxPower(uint8_t level, uint16_t timeout)
 
 	char buff[7];
 	String buffstring = "";
-	LoRaSerial->print("rf set_pwr "+level);
+	LoRaSerial->print("rf set_pwr "+String(level));
 	if(getRespond(buff, timeout)) 
 	{
 		buffstring = buff;
@@ -344,7 +364,7 @@ bool TONY_LORA::setSpreadingFactor(uint8_t sf, uint16_t timeout)
 
 	char buff[7];
 	String buffstring = "";
-	LoRaSerial->print("rf set_pwr "+sf);
+	LoRaSerial->print("rf set_pwr "+String(sf));
 	if(getRespond(buff, timeout)) 
 	{
 		buffstring = buff;
@@ -360,7 +380,7 @@ bool TONY_LORA::setSignalBandwidth(uint16_t bw, uint16_t timeout)
 
 	char buff[7];
 	String buffstring = "";
-	LoRaSerial->print("rf set_bw "+bw);
+	LoRaSerial->print("rf set_bw "+String(bw));
 	if(getRespond(buff, timeout)) 
 	{
 		buffstring = buff;
@@ -375,6 +395,22 @@ bool TONY_LORA::setCodingRate(String codingRate, uint16_t timeout)
 	char buff[7];
 	String buffstring = "";
 	LoRaSerial->print("rf set_cr "+codingRate);
+	if(getRespond(buff, timeout)) 
+	{
+		buffstring = buff;
+		if(buffstring == "Ok") return 1;
+		else if(buffstring != 0) return 0;
+	}
+	else return 0;	
+}
+
+bool TONY_LORA::setPremLenght(uint16_t lenght, uint16_t timeout)
+{
+	// if(sf < 0 && sf > 65535) return 0;
+
+	char buff[7];
+	String buffstring = "";
+	LoRaSerial->print("rf set_prlen "+String(lenght));
 	if(getRespond(buff, timeout)) 
 	{
 		buffstring = buff;
