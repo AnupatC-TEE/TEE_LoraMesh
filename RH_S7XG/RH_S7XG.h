@@ -1,7 +1,7 @@
 #include "RHGenericDriver.h"
 #include "TonySpace_LoRaWAN.h"
 
-class RH_S7XG : public class RHGenericDriver, public TONY_LORA {
+class RH_S7XG : public RHGenericDriver, public TONY_LORA {
     public:
         RH_S7XG();
         RH_S7XG(uint8_t n_slot, String syncword);

@@ -4,14 +4,12 @@
 
 RH_S7XG::RH_S7XG() {}
 
-RH_S7XG::RH_S7XG(uint8_t n_slot, String syncword){
-    slot(n_slot);
-    setSyncword(syncword, 1000)
-    reset();
+RH_S7XG::RH_S7XG(uint8_t n_slot){
+    setSlot(n_slot);
 }
 
 bool RH_S7XG::available() {
-    //check mode
+    return msgAvailable();
 }
 
 bool RH_S7XG::init(String deveui, String appeui, String appkey) {
