@@ -7,9 +7,11 @@ TONY_LORA TonyLORA;
 // extern HardwareSerial LoRaSerial(NULL);
 #endif
 
+#define RH_S7GX_MAX_LEN 200
 
 TONY_LORA::TONY_LORA()
 {
+	// RHGenericDriver();
 }
 
 void TONY_LORA::setSlot(uint8_t slot) 
@@ -593,16 +595,40 @@ bool TONY_LORA::available() {
     return msgAvailable();
 }
 
-bool TONY_LORA::init(String deveui, String appeui, String appkey) {
-    return begin(deveui,appeui,appkey);
+void TONY_LORA::waitAvailable() {
+    while (!available())
+		YIELD;
+}
+
+bool TONY_LORA::waitAvailableTimeout(uint16_t timeout) {
+    unsigned long starttime = millis();
+	while ( (millis() - starttime) < timeout)
+	{
+		if (available())
+		{
+			return true;
+		}
+		YIELD;
+	}
+	return false;
+}
+
+uint8_t TONY_LORA::maxMessageLength() {
+    return RH_S7GX_MAX_LEN;
+}
+
+bool TONY_LORA::init(uint8_t slot) {
+    setSlot(slot);
+    getModuleInfo();
+    return 1;
 }
 
 bool TONY_LORA::send(const uint8_t* data, uint8_t len) {
-    if(len > RH_S7GX_MAX_LEN) return false;
+    // if(len > RH_S7GX_MAX_LEN) return false;
 
     return sendBrodcast(String(*data), 2000);
 }
 
 bool TONY_LORA::recv(uint8_t* buf, uint8_t* len) {
-    return receiveBrodcast(buf, 2000);
+    return receiveBrodcast(_rx_buf, 2000);
 }

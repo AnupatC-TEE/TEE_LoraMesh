@@ -9,10 +9,14 @@
 
 #include "RHGenericDriver.h"
 
+#define MAX_RX_BUF_LEN 500
+
 class TONY_LORA : public RHGenericDriver
 {
 	public:
 		TONY_LORA();
+		~TONY_LORA() {
+		};
 		void setSlot(uint8_t slot);
 		bool reset(void);
 		bool begin(String deveui="", String appeui="", String appkey="");
@@ -68,15 +72,18 @@ class TONY_LORA : public RHGenericDriver
 		String lastSNR;
 
 		HardwareSerial *LoRaSerial;
-
+	
 		/* MESH function*/
 
-		virtual bool init(String deveui="", String appeui="", String appkey="");
-        // virtual bool available();
-        virtual bool send(const uint8_t* data, uint8_t len);
-        virtual bool recv(uint8_t* buf, uint8_t* len);
         bool available();
-        // virtual void waitAvailable();
+        void waitAvailable();
+        bool waitAvailableTimeout(uint16_t timeout);
+        uint8_t maxMessageLength();
+		bool init(uint8_t slot);
+        bool send(const uint8_t* data, uint8_t len);
+        bool recv(uint8_t* buf, uint8_t* len);
+		char _rx_buf[MAX_RX_BUF_LEN] = "";
+
 
 	private:
 		uint8_t pin_RX, 
