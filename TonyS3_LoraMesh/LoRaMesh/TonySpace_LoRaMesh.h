@@ -9,7 +9,7 @@
 
 #include "RHGenericDriver.h"
 
-#define MAX_RX_BUF_LEN 500
+#define MAX_RX_BUF_LEN 255
 
 class TONY_LORA : public RHGenericDriver
 {
@@ -52,7 +52,6 @@ class TONY_LORA : public RHGenericDriver
 		void getModuleInfo();
 		void getConfig();
 
-
 		bool joinOTAA(uint16_t timeout = 1000);
 		bool joinStatus(uint16_t timeout = 15000);
 		bool stringWrite(uint8_t port, String stringdata, uint16_t timeout = 15000);
@@ -62,6 +61,8 @@ class TONY_LORA : public RHGenericDriver
 		bool msgAvailable();
 		String readIncomingMsg();
 		String decodingRawMsg(String msg);
+		// String decodeMsg(char* msg);
+		// uint8_t encodeMsg(String)
 
 		//low power plan
 		// bool sleep();
@@ -71,10 +72,7 @@ class TONY_LORA : public RHGenericDriver
 		String lastRSSI;
 		String lastSNR;
 
-		HardwareSerial *LoRaSerial;
-	
 		/* MESH function*/
-
         bool available();
         void waitAvailable();
         bool waitAvailableTimeout(uint16_t timeout);
@@ -84,8 +82,14 @@ class TONY_LORA : public RHGenericDriver
         bool recv(uint8_t* buf, uint8_t* len);
 		char _rx_buf[MAX_RX_BUF_LEN] = "";
 
+		HardwareSerial *LoRaSerial;
 
+		/* Utils */
+		String hexToString(String hexInput);
+		String stringToHex(String input);
+		// char* uint8ToChar(const uint8_t* data, uint8_t len);
 	private:
+		/* UART variable */
 		uint8_t pin_RX, 
 				pin_TX,
 				_uart_nr;

@@ -208,7 +208,6 @@ bool TONY_LORA::getSyncWord(char* syncword, uint16_t timeout)
 	else return 0;
 }
 
-
 bool TONY_LORA::sendAndGet(String cmd, char* res, uint16_t timeout) {
 	LoRaSerial->print(cmd);
 	if(getRespond(res, timeout)) return 1;
@@ -618,17 +617,69 @@ uint8_t TONY_LORA::maxMessageLength() {
 }
 
 bool TONY_LORA::init(uint8_t slot) {
+	bool bw, cr, freq, pow;
+
     setSlot(slot);
     getModuleInfo();
-    return 1;
+
+	bw = setSignalBandwidth(125);
+	cr = setCodingRate("4/5");
+	freq = setFrequency(920000000);
+	pow = setTxPower(13);
+
+    return bw && cr && freq && pow;
 }
 
 bool TONY_LORA::send(const uint8_t* data, uint8_t len) {
-    // if(len > RH_S7GX_MAX_LEN) return false;
+    if(len > RH_S7GX_MAX_LEN) return false;
 
-    return sendBrodcast(String(*data), 2000);
+	char cvt_data[len+1];
+	for (size_t i = 0; i < len; i++) {
+    	cvt_data[i] = (char)data[i];
+	}
+	cvt_data[len] = '\0';
+	Serial.println(cvt_data);
+	String data_out = stringToHex(String(cvt_data));
+	Serial.println(data_out);
+    return sendBrodcast(data_out, 2000);
 }
 
 bool TONY_LORA::recv(uint8_t* buf, uint8_t* len) {
-    return receiveBrodcast(_rx_buf, 2000);
+	String decode_data = "";
+	uint8_t res = receiveBrodcast(_rx_buf, 2000);
+	// Serial.println(_rx_buf);
+	TonyLORA.decodingRawMsg(String(_rx_buf));
+	decode_data = hexToString(lastMSG);
+	decode_data.getBytes(buf,MAX_RX_BUF_LEN);
+	// Serial.println((char*)buf);
+    return res;
+}
+
+// char TONY_LORA::uint8ToChar(const uint8_t* data, uint8_t len) {
+// 	char cvt_data[len+1];
+// 	for (size_t i = 0; i < len; i++) {
+//     	cvt_data[i] = (char)data[i];
+// 	}
+// 	cvt_data[len] = '\0';
+// 	return
+// }
+
+String TONY_LORA::stringToHex(String input) {
+    String hexString = "";
+    for (int i = 0; i < input.length(); i++) {
+        char c = input.charAt(i);
+        if (c < 16) hexString += "0";  // Add leading zero for single-digit hex values
+        hexString += String(c, HEX);
+    }
+    return hexString;
+}
+
+String TONY_LORA::hexToString(String hexInput) {
+    String decodedString = "";
+    for (int i = 0; i < hexInput.length(); i += 2) {
+        String hexByte = hexInput.substring(i, i + 2);
+        char c = (char) strtol(hexByte.c_str(), NULL, 16);
+        decodedString += c;
+    }
+    return decodedString;
 }
