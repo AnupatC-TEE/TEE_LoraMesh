@@ -80,15 +80,21 @@ class TONY_LORA : public RHGenericDriver
 		bool init(uint8_t slot);
         bool send(const uint8_t* data, uint8_t len);
         bool recv(uint8_t* buf, uint8_t* len);
-		char _rx_buf[MAX_RX_BUF_LEN] = "";
+		void validateRxBuf();
+		bool _rxBufValid;
 
 		HardwareSerial *LoRaSerial;
+		uint16_t _tx_timeout = 4000;
+		uint16_t _rx_timeout = 4000;
 
 		/* Utils */
 		String hexToString(String hexInput);
 		String stringToHex(String input);
-		// char* uint8ToChar(const uint8_t* data, uint8_t len);
+
 	private:
+		char _rx_buf[100] = "";
+		String header = "";
+		String data = "";
 		/* UART variable */
 		uint8_t pin_RX, 
 				pin_TX,

@@ -7,8 +7,6 @@ TONY_LORA TonyLORA;
 // extern HardwareSerial LoRaSerial(NULL);
 #endif
 
-#define RH_S7GX_MAX_LEN 200
-
 TONY_LORA::TONY_LORA()
 {
 	// RHGenericDriver();
@@ -613,7 +611,7 @@ bool TONY_LORA::waitAvailableTimeout(uint16_t timeout) {
 }
 
 uint8_t TONY_LORA::maxMessageLength() {
-    return RH_S7GX_MAX_LEN;
+    return MAX_RX_BUF_LEN;
 }
 
 bool TONY_LORA::init(uint8_t slot) {
@@ -631,38 +629,55 @@ bool TONY_LORA::init(uint8_t slot) {
 }
 
 bool TONY_LORA::send(const uint8_t* data, uint8_t len) {
-    if(len > RH_S7GX_MAX_LEN) return false;
+    // if(len > MAX_RX_BUF_LEN) return false;
 
-	char cvt_data[len+1];
-	for (size_t i = 0; i < len; i++) {
-    	cvt_data[i] = (char)data[i];
-	}
-	cvt_data[len] = '\0';
-	Serial.println(cvt_data);
-	String data_out = stringToHex(String(cvt_data));
-	Serial.println(data_out);
-    return sendBrodcast(data_out, 2000);
+	String buf = "";
+
+	//set msg header
+	buf += (char)_txHeaderTo;
+	buf += (char)_txHeaderFrom;
+	buf += (char)_txHeaderId;
+	buf += (char)_txHeaderFlags;
+	//follow by actual data
+	buf += (char*)data;
+	
+	String data_out = stringToHex(buf);
+    return sendBrodcast(data_out, 4000);
 }
 
-bool TONY_LORA::recv(uint8_t* buf, uint8_t* len) {
+bool TONY_LORA::recv(uint8_t* respond, uint8_t* len) {
 	String decode_data = "";
-	uint8_t res = receiveBrodcast(_rx_buf, 2000);
-	// Serial.println(_rx_buf);
+	receiveBrodcast(_rx_buf, (int)_rx_timeout);
+	if(String(_rx_buf) == "radio_err") return 0;
+
 	TonyLORA.decodingRawMsg(String(_rx_buf));
 	decode_data = hexToString(lastMSG);
-	decode_data.getBytes(buf,MAX_RX_BUF_LEN);
-	// Serial.println((char*)buf);
-    return res;
+	header = decode_data.substring(0,4);
+	data = decode_data.substring(4);
+	data.trim();
+	strcpy((char*)respond,&data[0]);
+
+	validateRxBuf();
+	// Serial.println(header);
+	// Serial.println(data);
+	// Serial.println(buf);
+    return 1;
 }
 
-// char TONY_LORA::uint8ToChar(const uint8_t* data, uint8_t len) {
-// 	char cvt_data[len+1];
-// 	for (size_t i = 0; i < len; i++) {
-//     	cvt_data[i] = (char)data[i];
-// 	}
-// 	cvt_data[len] = '\0';
-// 	return
-// }
+void TONY_LORA::validateRxBuf() {
+	_rxHeaderTo    = (uint8_t)header[0];
+	_rxHeaderFrom  = (uint8_t)header[1];
+	_rxHeaderId    = (uint8_t)header[2];
+	_rxHeaderFlags = (uint8_t)header[3];
+	if (_promiscuous ||
+			_rxHeaderTo == _thisAddress ||
+			_rxHeaderTo == RH_BROADCAST_ADDRESS)
+	{
+		setRxLedState(true);
+		_rxGood++;
+		_rxBufValid = true;
+	}
+}
 
 String TONY_LORA::stringToHex(String input) {
     String hexString = "";
