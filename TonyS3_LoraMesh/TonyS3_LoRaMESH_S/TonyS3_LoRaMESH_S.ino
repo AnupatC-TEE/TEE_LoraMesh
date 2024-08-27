@@ -2,6 +2,7 @@
 #include "TonySpace_LoRaMesh.h"
 
 uint16_t timeout = 1000;
+int counter = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -23,7 +24,7 @@ void setup() {
   // TonyLORA.getModuleInfo();
 
   //set freq
-  Serial.println(TonyLORA.setFrequency(915000000) ? "Freq OK" : "Freq Failed");
+  Serial.println(TonyLORA.setFrequency(924000000) ? "Freq OK" : "Freq Failed");
 
   //set tx power
   Serial.println(TonyLORA.setTxPower(12) ? "TX OK" : "TX Failed");
@@ -45,7 +46,7 @@ void setup() {
 
 void loop() {
   /* Sending brodcast */
-  String test = "Aerial";
+  String test = "Aerial "+String(counter++);
   if (TonyLORA.send((uint8_t*)test.c_str(), test.length()) == 1)  // return 1 = successfully, 0 = fail
   {
     Serial.println("Sending brodcast successfully.");
@@ -57,5 +58,5 @@ void blink() {
   Tony.digitalWrite(LED_BUILTIN, HIGH);  //---- Write HIGH to pin IO12 (LED_BUILTIN)
   delay(1000);
   Tony.digitalWrite(LED_BUILTIN, LOW);  //---- Write LOW to pin IO12 (LED_BUILTIN)
-  delay(5000);
+  delay(4000);
 }

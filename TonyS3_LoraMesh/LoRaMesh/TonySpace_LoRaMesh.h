@@ -32,8 +32,7 @@ class TONY_LORA : public RHGenericDriver
 		bool setSyncword(String sync, uint16_t timeout = 1000);
 		// bool setChannelFreq();
 		// bool setCADTimeout();
-		// bool setModemRegistor();
-		// bool setModelConfig();
+		bool setRxContinuous(bool state = 0, uint16_t timeout = 1000);
 
 
 		bool getDeveui(char * deveui, uint16_t timeout = 1000);
@@ -61,6 +60,7 @@ class TONY_LORA : public RHGenericDriver
 		bool msgAvailable();
 		String readIncomingMsg();
 		String decodingRawMsg(String msg);
+		void decodingRawCon(String msg);
 		// String decodeMsg(char* msg);
 		// uint8_t encodeMsg(String)
 
@@ -80,7 +80,9 @@ class TONY_LORA : public RHGenericDriver
 		bool init(uint8_t slot);
         bool send(const uint8_t* data, uint8_t len);
         bool recv(uint8_t* buf, uint8_t* len);
+		void handleRxMsg();
 		void validateRxBuf();
+		void clearRxBuf();
 		bool _rxBufValid;
 
 		HardwareSerial *LoRaSerial;
@@ -93,12 +95,15 @@ class TONY_LORA : public RHGenericDriver
 
 	private:
 		char _rx_buf[100] = "";
+		String _rx_con = "";
 		String header = "";
 		String data = "";
 		/* UART variable */
 		uint8_t pin_RX, 
 				pin_TX,
 				_uart_nr;
+
+		bool _rx_sta = 0;
 		
 	protected:
 

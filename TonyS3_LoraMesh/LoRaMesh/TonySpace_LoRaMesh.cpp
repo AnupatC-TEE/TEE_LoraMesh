@@ -480,6 +480,31 @@ bool TONY_LORA::setSyncword(String sync, uint16_t timeout)
 	else return 0;	
 }
 
+bool TONY_LORA::setRxContinuous(bool state, uint16_t timeout)  
+{
+	String buf = state ? "on" : "off";
+	char buff[7];
+	String buffstring = "";
+	LoRaSerial->print("rf rx_con "+buf);
+	if(getRespond(buff, timeout)) 
+	{
+		buffstring = buff;
+		Serial.println(buff);
+		if(buffstring == "Ok") {
+			_rx_con = "on";
+			return 1; 
+		}
+		else if(buffstring != 0) {
+			_rx_con = "off";
+			return 0;
+		}
+	}
+	else {
+		_rx_con = "off";
+		return 0;
+	}
+}
+
 bool TONY_LORA::receiveBrodcast(char * receivedata, uint16_t timeout)
 {
 	char buff[40];
@@ -562,7 +587,7 @@ String TONY_LORA::decodingRawMsg(String msg) {
 	char str[200];
 	strcpy(str, msg.c_str());
     char *token;
-    char *buff[4];  // Array to hold the split tokens
+    char *buff[5];  // Array to hold the split tokens
     int i = 0;
 
     // Get the first token
@@ -574,22 +599,50 @@ String TONY_LORA::decodingRawMsg(String msg) {
         token = strtok(NULL, " ");
     }
 
-	// Serial.println(array[0]); //cmd
-	// Serial.println(array[1]); //data
-	// Serial.println(array[2]); //rssi
-	// Serial.println(array[3]);
-
-	lastMSG = buff[1];
-	lastRSSI = buff[2];
-	lastSNR = buff[3];
+	if(_rx_con == "on") {
+		lastMSG = buff[2];
+		lastRSSI = buff[3];
+		lastSNR = buff[4];
+	} else {
+		lastMSG = buff[1];
+		lastRSSI = buff[2];
+		lastSNR = buff[3];
+	}
 
 	return lastMSG;
+}
+
+void TONY_LORA::decodingRawCon(String msg) {
+  char str[500];
+  strcpy(str, msg.c_str());
+  char *token;
+  char *buff[10];  // Array to hold the split tokens
+  int i = 0;
+  String data = "";
+
+  // Get the first token
+  token = strtok(str, "\n");
+
+  // Walk through other tokens
+  while (token != NULL) {
+    buff[i++] = token;  // Store the token in the array
+    token = strtok(NULL, "\n");
+  }
+
+  for(int k=0; k<i;){
+	data = buff[k];
+    decodingRawMsg(data);
+	data = buff[k+1];
+	Serial.println(data);
+    k = k+2;
+  }
 }
 
 /* MESH function */
 
 bool TONY_LORA::available() {
-    return msgAvailable();
+	handleRxMsg();
+    return _rxBufValid;
 }
 
 void TONY_LORA::waitAvailable() {
@@ -632,7 +685,7 @@ bool TONY_LORA::send(const uint8_t* data, uint8_t len) {
     // if(len > MAX_RX_BUF_LEN) return false;
 
 	String buf = "";
-
+	Serial.println((char*)data);
 	//set msg header
 	buf += (char)_txHeaderTo;
 	buf += (char)_txHeaderFrom;
@@ -642,26 +695,50 @@ bool TONY_LORA::send(const uint8_t* data, uint8_t len) {
 	buf += (char*)data;
 	
 	String data_out = stringToHex(buf);
+	Serial.println(data_out);
     return sendBrodcast(data_out, 4000);
 }
 
-bool TONY_LORA::recv(uint8_t* respond, uint8_t* len) {
+void TONY_LORA::handleRxMsg() {
 	String decode_data = "";
-	receiveBrodcast(_rx_buf, (int)_rx_timeout);
-	if(String(_rx_buf) == "radio_err") return 0;
+	String buf = "";
+	if(_rx_con == "on") {
+		if(msgAvailable()){
+			buf = TonyLORA.LoRaSerial->readString();
+			// Serial.println(buf);
+			decodingRawCon(buf);
+		} else {
+			return;
+		}
+	} 
+	else 
+	{
+		receiveBrodcast(_rx_buf, (int)_rx_timeout);
+		if(String(_rx_buf) == "radio_err") return;
+		if(String(_rx_buf) == "") return;
+		// Serial.println(String(_rx_buf));
+		// _rx_sta = 1;
+		TonyLORA.decodingRawMsg(String(_rx_buf));
+	}
 
-	TonyLORA.decodingRawMsg(String(_rx_buf));
 	decode_data = hexToString(lastMSG);
 	header = decode_data.substring(0,4);
 	data = decode_data.substring(4);
 	data.trim();
-	strcpy((char*)respond,&data[0]);
 
 	validateRxBuf();
+
 	// Serial.println(header);
 	// Serial.println(data);
 	// Serial.println(buf);
-    return 1;
+}
+
+bool TONY_LORA::recv(uint8_t* respond, uint8_t* len) {
+	if (!available())
+		return false;
+	strcpy((char*)respond,&data[0]);
+	clearRxBuf();
+    return true;
 }
 
 void TONY_LORA::validateRxBuf() {
@@ -677,6 +754,15 @@ void TONY_LORA::validateRxBuf() {
 		_rxGood++;
 		_rxBufValid = true;
 	}
+}
+
+void TONY_LORA::clearRxBuf()
+{
+	ATOMIC_BLOCK_START;
+	_rxBufValid = false;
+	// _bufLen = 0;
+	// setRxLedState(false);
+	ATOMIC_BLOCK_END;
 }
 
 String TONY_LORA::stringToHex(String input) {

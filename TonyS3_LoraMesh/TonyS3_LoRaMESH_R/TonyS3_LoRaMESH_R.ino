@@ -26,7 +26,7 @@ void setup() {
   // TonyLORA.getModuleInfo();
 
   //set freq
-  Serial.println(TonyLORA.setFrequency(915000000) ? "Freq OK" : "Freq Failed");
+  Serial.println(TonyLORA.setFrequency(924000000) ? "Freq OK" : "Freq Failed");
 
   //set tx power
   Serial.println(TonyLORA.setTxPower(12) ? "TX OK" : "TX Failed");
@@ -43,11 +43,15 @@ void setup() {
   //set preamble
   Serial.println(TonyLORA.setPremLenght(10) ? "PL OK" : "PL Failed");
 
+  //set rx_continue
+  Serial.println(TonyLORA.setRxContinuous(1) ? "RX_CON OK" : "RX_CON Failed");
+
   // TonyLORA.getConfig();
 }
 
 void loop() {
   /* receiving brodcast */
+  if (TonyLORA.available()) Serial.println("message available");
   /*  Maximum data size = 255 byte  */
   if (TonyLORA.recv(response, &len)) {
     Serial.println("Successfully receiving message.");
@@ -55,17 +59,17 @@ void loop() {
     delay(10);
     Serial.println((char*)response);
     blink();
+    response[0] = '\0';
   } else {
-    Serial.println("Receiving message fail.");
-    Serial.println("No signal");
+    // Serial.println("Receiving message fail.");
+    // Serial.println("No signal");
+    delay(1000);
   }
-  response[0] = '\0';
-  delay(1000);
 }
 
 void blink() {
   Tony.digitalWrite(LED_BUILTIN, HIGH);  //---- Write HIGH to pin IO12 (LED_BUILTIN)
-  delay(1000);
+  delay(500);
   Tony.digitalWrite(LED_BUILTIN, LOW);  //---- Write LOW to pin IO12 (LED_BUILTIN)
-  delay(2000);
+  delay(100);
 }
