@@ -38,7 +38,6 @@ class TONY_LORA : public RHGenericDriver
 		bool getDeveui(char * deveui, uint16_t timeout = 1000);
 		bool getAppeui(char * appeui, uint16_t timeout = 1000);
 		bool getAppkey(char * appkey, uint16_t timeout = 1000);
-		// bool getLastRssi();
 		bool getBandFrequency(char* band_freq, uint16_t timeout=1000);
 		bool getTxPower(char* txPower, uint16_t timeout=1000);
 		bool getSpredingFactor(char* sf, uint16_t timeout=1000);
@@ -69,8 +68,8 @@ class TONY_LORA : public RHGenericDriver
 		// bool wakeUp();
 
 		String lastMSG;
-		String lastRSSI;
-		String lastSNR;
+		// String lastRSSI;
+		int16_t _lastSNR;
 
 		/* MESH function*/
         bool available();
@@ -84,7 +83,10 @@ class TONY_LORA : public RHGenericDriver
 		void validateRxBuf();
 		void clearRxBuf();
 		bool _rxBufValid;
-
+		// virtual bool lastRssi();
+		// void setHeaderTo(uint8_t to);
+		// void setHeaderFrom(uint8_t from);
+		
 		HardwareSerial *LoRaSerial;
 		uint16_t _tx_timeout = 4000;
 		uint16_t _rx_timeout = 4000;
@@ -104,6 +106,7 @@ class TONY_LORA : public RHGenericDriver
 				_uart_nr;
 
 		bool _rx_sta = 0;
+		bool _tx_over_con = 0;
 		
 	protected:
 
