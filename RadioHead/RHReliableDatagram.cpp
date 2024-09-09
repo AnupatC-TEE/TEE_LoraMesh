@@ -47,6 +47,7 @@ uint8_t RHReliableDatagram::retries()
 ////////////////////////////////////////////////////////////////////
 bool RHReliableDatagram::sendtoWait (uint8_t* buf, uint8_t len, uint8_t address)
 {
+	// Serial.println("RH send: ")
 	// Assemble the message
 	uint8_t thisSequenceNumber = ++_lastSequenceNumber;
 	uint8_t retries = 0;
@@ -137,17 +138,26 @@ bool RHReliableDatagram::recvfromAck (uint8_t* buf, uint8_t* len, uint8_t* from,
 	// Get the message before its clobbered by the ACK (shared rx and tx buffer in some drivers
 	if (available() && recvfrom (buf, len, &_from, &_to, &_id, &_flags))
 	{
+		// Serial.print("Temp msg(reli): ");
+		// Serial.println((char*)buf);
 		// Never ACK an ACK
 		if (! (_flags & RH_FLAGS_ACK))
 		{
 			// Its a normal message not an ACK
-			if (_to == _thisAddress)
+			if (_to == _thisAddress) 
 			{
 				// Its for this node and
 				// Its not a broadcast, so ACK it
 				// Acknowledge message with ACK set in flags and ID set to received ID
 				acknowledge (_id, _from);
 			}
+
+			// if ( _to == RH_BROADCAST_ADDRESS)
+			// {
+			// 	// Serial.println("Boardcast address");
+			// 	resArp(_id, _from);
+			// }
+
 			// Filter out retried messages that we have seen before. This explicitly
 			// only filters out messages that are marked as retries to protect against
 			// the scenario where a transmitting device sends just one message and
@@ -161,6 +171,7 @@ bool RHReliableDatagram::recvfromAck (uint8_t* buf, uint8_t* len, uint8_t* from,
 				if (id)    *id =    _id;
 				if (flags) *flags = _flags;
 				_seenIds[_from] = _id;
+				// Serial.println("No dup, return true");
 				return true;
 			}
 			// Else just re-ack it and wait for a new one
@@ -209,3 +220,16 @@ void RHReliableDatagram::acknowledge (uint8_t id, uint8_t from)
 	sendto (&ack, sizeof (ack), from);
 	waitPacketSent();
 }
+
+// void RHReliableDatagram::resArp(uint8_t id, uint8_t from) {
+// 	Serial.println("send back arp");
+// 	setHeaderId (id);
+// 	// setHeaderFlags (RH_FLAGS_ACK);
+// 	uint8_t buf0[1];
+// 	buf0[0] = 2;
+// 	// sendto (&ack, sizeof (ack), from);
+// 	// waitPacketSent();
+// 	Serial.print("res msg : ");
+// 	Serial.println((char*)buf0);
+// 	sendtoWait(buf0, sizeof(buf0), from);
+// }

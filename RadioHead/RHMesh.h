@@ -10,13 +10,13 @@
 #include <RHRouter.h>
 
 // Types of RHMesh message, used to set msgType in the RHMeshHeader
-#define RH_MESH_MESSAGE_TYPE_APPLICATION                    0
+#define RH_MESH_MESSAGE_TYPE_APPLICATION                    4
 #define RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_REQUEST        1
 #define RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_RESPONSE       2
 #define RH_MESH_MESSAGE_TYPE_ROUTE_FAILURE                  3
 
 // Timeout for address resolution in milliecs
-#define RH_MESH_ARP_TIMEOUT 4000
+#define RH_MESH_ARP_TIMEOUT 7000
 
 /////////////////////////////////////////////////////////////////////
 /// \class RHMesh RHMesh.h <RHMesh.h>

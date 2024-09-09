@@ -191,6 +191,8 @@ protected:
 	/// \return true if there is a message received and it is a new message
 	bool haveNewMessage();
 
+	// void resArp(uint8_t id, uint8_t from);
+
 private:
 	/// Count of retransmissions we have had to send
 	uint32_t _retransmissions;
