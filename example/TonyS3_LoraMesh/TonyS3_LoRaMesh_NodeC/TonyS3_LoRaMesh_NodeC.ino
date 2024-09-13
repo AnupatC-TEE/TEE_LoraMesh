@@ -3,24 +3,17 @@
 #include <RHRouter.h>
 #include <RHMesh.h>
 
-#define TXINTERVAL 15000  // delay between successive transmissions
-unsigned long nextTxTime;
+// #define RH_TEST_NETWORK 1
 
-// In this small artifical network of 4 nodes,
-#define BRIDGE_ADDRESS 4  // address of the bridge ( we send our data to, hopefully the bridge knows what to do with our data )
-#define NODE_ADDRESS 3    // address of this node
+#define BRIDGE_ADDRESS 3  // address of the bridge ( we send our data to, hopefully the bridge knows what to do with our data )
+#define RXTIMEOUT 3000    // it is roughly the delay between successive transmissions
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHMesh *manager;
 
-// message buffer
-char buf[255];
-uint8_t data[] = "Aello World!";
-// String test_data = "Hello World!";
+char buf[MAX_RX_BUF_LEN];
+uint8_t data[] = "Hello back from bridge";
 uint8_t res;
-
-uint16_t timeout = 1000;
-int counter = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -31,16 +24,14 @@ void setup() {
 
   TonyLORA.init(SLOT2);
   TonyLORA.reset();
-  // TonyLORA.setSlot(SLOT2);
-  manager = new RHMesh(TonyLORA, NODE_ADDRESS);
+
+  manager = new RHMesh(TonyLORA, BRIDGE_ADDRESS); 
 
   if (!manager->init()) {
     Serial.println(F("init failed"));
   } else {
     Serial.println("init done");
   }
-
-  Serial.println();
 
   //set freq
   Serial.println(TonyLORA.setFrequency(924000000) ? "Freq OK" : "Freq Failed");
@@ -66,50 +57,37 @@ void setup() {
   //set rx_continue
   Serial.println(TonyLORA.setRxContinuous(1) ? "RX_CON OK" : "RX_CON Failed");
 
-
   // TonyLORA.getConfig();
-  nextTxTime = millis();
+
+  Serial.println("TonyS76S Recv : ready");
 }
 
 void loop() {
-
-  mesh();
-}
-
-void mesh() {
-  if (millis() > nextTxTime) {
-    String test = "Acheron";
-
-    nextTxTime += TXINTERVAL;
-    Serial.print("Sending to bridge n .");
-    Serial.print(BRIDGE_ADDRESS);
-    Serial.print(" res=");
-
-    // A route to the destination will be automatically discovered.
-    res = manager->sendtoWait(data, sizeof(data), BRIDGE_ADDRESS);
-    Serial.println(res);
-    if (res == RH_ROUTER_ERROR_NONE) {
-      // Data has been reliably delivered to the next node.
-      // now we do...
-      // Serial.println("Success route");
-    } else {
-      // Data not delivered to the next node.
-      Serial.println("sendtoWait failed. Are the bridge/intermediate mesh nodes running?");
-    }
-  }
-
-  // radio needs to stay always in receive mode ( to process/forward messages )
   uint8_t len = sizeof(buf);
   uint8_t from;
-  if (manager->recvfromAck((uint8_t *)buf, &len, &from)) {
-    Serial.print("message from node n.");
+  uint8_t dest;
+  uint8_t id;
+  uint8_t flag;
+  if (manager->recvfromAck((uint8_t *)buf, &len, &from, &dest, &id, &flag)) {
+    Serial.print("request from node n.");
     Serial.print(from);
     Serial.print(": ");
     Serial.print((char *)buf);
+    Serial.print(" dest: ");
+    Serial.print(dest);
+    Serial.print(" id: ");
+    Serial.print(id);
+    Serial.print(" flag: ");
+    Serial.print(flag);
     Serial.print(" rssi: ");
     Serial.println(TonyLORA.lastRssi());
+    blink();
+    memset(buf, 0 ,sizeof(buf));
   }
+  delay(25);
 }
+
+
 
 void blink() {
   Tony.digitalWrite(LED_BUILTIN, HIGH);  //---- Write HIGH to pin IO12 (LED_BUILTIN)

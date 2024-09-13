@@ -11,7 +11,7 @@ class TONY_LORA
 {
 	public:
 		TONY_LORA();
-		void setSlot(uint8_t slot);
+		virtual void setSlot(uint8_t slot);
 		bool reset(void);
 		bool begin(String deveui="", String appeui="", String appkey="");
 		bool setDeveui(String deveui, uint16_t timeout = 2000);
@@ -66,12 +66,12 @@ class TONY_LORA
 		String lastSNR;
 
 		HardwareSerial *LoRaSerial;
-	private:
+	
+	protected:
 		uint8_t pin_RX, 
 				pin_TX,
 				_uart_nr;
 		
-	protected:
 
 };
 

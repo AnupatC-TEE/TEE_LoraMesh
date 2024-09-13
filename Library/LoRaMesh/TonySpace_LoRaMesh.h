@@ -83,7 +83,7 @@ class TONY_LORA : public RHGenericDriver
         void waitAvailable();
         bool waitAvailableTimeout(uint16_t timeout);
         uint8_t maxMessageLength();
-		bool init(uint8_t slot);
+		bool init(uint8_t slot, int bandwidth=125, String codingRate="4/5", int frequency=920000000, int tx_power=13);
         bool send(const uint8_t* data, uint8_t len);
         bool recv(uint8_t* buf, uint8_t* len);
 		void handleRxMsg();

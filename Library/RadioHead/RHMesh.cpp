@@ -36,32 +36,16 @@ uint8_t RHMesh::sendtoWait (uint8_t* buf, uint8_t len, uint8_t address, uint8_t 
 	if (address != RH_BROADCAST_ADDRESS)
 	{
 		RoutingTableEntry* route = getRouteTo (address);
-		if (!route && !doArp (address)) //route is not found so arp need to need to be success
-		{
-			// Serial.println("No route");
-			return RH_ROUTER_ERROR_NO_ROUTE; //some how it enter here
-		}
+		if (!route && !doArp (address))
+			return RH_ROUTER_ERROR_NO_ROUTE;
 	}
 
-	// Now have a route. Construct an application layer message and send it via that route
-    MeshApplicationMessage* a = (MeshApplicationMessage*)&_tmpMessage;
-    a->header.msgType = RH_MESH_MESSAGE_TYPE_APPLICATION;
-
-    // Ensure that the message data is copied properly
-    memcpy(a->data, buf, len);
-
-    // Calculate the total size of the message to be sent
-    uint8_t messageSize = sizeof(RHMesh::MeshMessageHeader) + len;
-
-    // Send the message using RHRouter
-    // Serial.println("Sending message...");
-    // Serial.print("Message Type: ");
-    // Serial.println(a->header.msgType);
-    // Serial.print("Message Data: ");
-    // Serial.println((char*)a->data);  // Assuming buf is a string; if it's not, this may need to change
-
-    // Pass the correct size and message buffer to the send function
-    return RHRouter::sendtoWait((uint8_t*)a, messageSize, address, flags);
+	// Now have a route. Contruct an application layer message and send it via that route
+	MeshApplicationMessage* a = (MeshApplicationMessage*) &_tmpMessage;
+	a->header.msgType = RH_MESH_MESSAGE_TYPE_APPLICATION;
+	memcpy (a->data, buf, len);
+	// Serial.println((char*)a->data);
+	return RHRouter::sendtoWait (_tmpMessage, sizeof (RHMesh::MeshMessageHeader) + len, address, flags);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -73,12 +57,9 @@ bool RHMesh::doArp (uint8_t address)
 	p->header.msgType = RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_REQUEST;
 	p->destlen = 1;
 	p->dest = address; // Who we are looking for
-	// Serial.println("do ARP");
 	uint8_t error = RHRouter::sendtoWait ( (uint8_t*) p, sizeof (RHMesh::MeshMessageHeader) + 2, RH_BROADCAST_ADDRESS);
 	if (error !=  RH_ROUTER_ERROR_NONE)
-	{
 		return false;
-	}
 
 	// Wait for a reply, which will be unicast back to us
 	// It will contain the complete route to the destination
@@ -90,10 +71,7 @@ bool RHMesh::doArp (uint8_t address)
 	{
 		if (waitAvailableTimeout (timeLeft))
 		{
-			bool res = RHRouter::recvfromAck (_tmpMessage, &messageLen);
-			// Serial.print("ARP res: ");
-			// Serial.println(res);
-			if (res)
+			if (RHRouter::recvfromAck (_tmpMessage, &messageLen))
 			{
 				if (messageLen > 1
 						&& p->header.msgType == RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_RESPONSE)
@@ -101,7 +79,6 @@ bool RHMesh::doArp (uint8_t address)
 					// Got a reply, now add the next hop to the dest to the routing table
 					// The first hop taken is the first octet
 					addRouteTo (address, headerFrom());
-					// Serial.println("do ARP ok");
 					return true;
 				}
 			}
@@ -171,6 +148,9 @@ uint8_t RHMesh::route (RoutedMessage* message, uint8_t messageLen)
 // Subclasses may want to override
 bool RHMesh::isPhysicalAddress (uint8_t* address, uint8_t addresslen)
 {
+	// Serial.println((int)address[0]);
+	// Serial.println((int)_thisAddress);
+	// Serial.println((int)addresslen);
 	// Can only handle physical addresses 1 octet long, which is the physical node address
 	return addresslen == 1 && address[0] == _thisAddress;
 }
@@ -183,98 +163,86 @@ bool RHMesh::recvfromAck (uint8_t* buf, uint8_t* len, uint8_t* source, uint8_t* 
 	uint8_t _dest;
 	uint8_t _id;
 	uint8_t _flags;
-	char route_buf[tmpMessageLen];
-	if (RHRouter::recvfromAck ((uint8_t*)route_buf, &tmpMessageLen, &_source, &_dest, &_id, &_flags))
-	{	
-		// String header = String(route_buf)[0];
-		String data_rx = String(route_buf).substring(1);
-		// Serial.println((char*)_tmpMessage);
+	if (RHRouter::recvfromAck (_tmpMessage, &tmpMessageLen, &_source, &_dest, &_id, &_flags))
+	{
 		MeshMessageHeader* p = (MeshMessageHeader*) &_tmpMessage;
-		p->msgType = (uint8_t)route_buf[0];
-		// p->data = (uint8_t)data_rx.c_str();
-		// Serial.print("(AA) msg type: ");
-		// int a = p->msgType;
-		// Serial.println(a);
-
+		// Serial.println(tmpMessageLen);
 		if (tmpMessageLen >= 1
 				&& p->msgType == RH_MESH_MESSAGE_TYPE_APPLICATION)
 		{
-			// Serial.println("(1)");
+			// Serial.println("Type Application");
 			MeshApplicationMessage* a = (MeshApplicationMessage*) p;
 			// Handle application layer messages, presumably for our caller
 			if (source) *source = _source;
 			if (dest)   *dest   = _dest;
 			if (id)     *id     = _id;
 			if (flags)  *flags  = _flags;
-			// uint8_t msgLen = tmpMessageLen - sizeof (MeshMessageHeader);
-			// if (*len > msgLen)
-			// 	*len = msgLen;
-			// memcpy (buf, a->data, *len);
-			memcpy(buf, data_rx.c_str(), data_rx.length());
-			// Serial.println((char*)a->data);
-			// Serial.println("RH MESH MESSAGE ACCEPTED");
+			uint8_t msgLen = tmpMessageLen - sizeof (MeshMessageHeader);
+			if (*len > msgLen)
+				*len = msgLen;
+			memcpy (buf, a->data, *len);
+
 			return true;
 		}
 		else if (_dest == RH_BROADCAST_ADDRESS
 				 && tmpMessageLen > 1
 				 && p->msgType == RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_REQUEST)
 		{
-			// Serial.println("It enter discovery");
+			Serial.println("Type Discovery");
+			Serial.println("(1)");
 			MeshRouteDiscoveryMessage* d = (MeshRouteDiscoveryMessage*) p;
-			int s = d->header.msgType;
-			// Serial.print("test type cast");
-			// Serial.println(s);
-			d->destlen = (uint8_t)route_buf[1];
-			d->dest = (uint8_t)route_buf[2];
-			// memcpy(d->route, data_rx.c_str(), data_rx.length());
 			// Handle Route discovery requests
 			// Message is an array of node addresses the route request has already passed through
 			// If it originally came from us, ignore it
 			if (_source == _thisAddress)
 				return false;
-			// Serial.println("Correct address");
 
 			uint8_t numRoutes = tmpMessageLen - sizeof (MeshMessageHeader) - 2;
+			Serial.println((int)numRoutes);
 			uint8_t i;
 			// Are we already mentioned?
 			for (i = 0; i < numRoutes; i++)
-				if (d->route[i] == _thisAddress)
+				if (d->route[i] == _thisAddress){
+					Serial.println("Skip past this node");
 					return false; // Already been through us. Discard
-			// Serial.println("Route not discard");
+				}
 
+			Serial.println("(2)");
 			addRouteTo (_source, headerFrom()); // The originator needs to be added regardless of node type
 
 			// Hasnt been past us yet, record routes back to the earlier nodes
 			// No need to waste memory if we are not participating in routing
 			if (_isa_router)
 			{
-				// Serial.println("Enter isa");
-				for (i = 0; i < numRoutes; i++)
+				Serial.println("(3)");
+				for (i = 0; i < numRoutes; i++){
+					if(d->route[i] == 0) break;
 					addRouteTo (d->route[i], headerFrom());
+				}
 			}
-
+			Serial.println(i);
 			if (isPhysicalAddress (&d->dest, d->destlen))
 			{
+				Serial.println("(a)");
 				// This route discovery is for us. Unicast the whole route back to the originator
 				// as a RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_RESPONSE
 				// We are certain to have a route there, because we just got it
 				d->header.msgType = RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_RESPONSE;
-				// Serial.println("(0) Unicast back");
 				RHRouter::sendtoWait ( (uint8_t*) d, tmpMessageLen, _source);
-				// Serial.println("Unicast back");
+				// Serial.println("Unicast");
 			}
 			else if ( (i < _max_hops) && _isa_router)
 			{
+				Serial.println("(b)");
 				// Its for someone else, rebroadcast it, after adding ourselves to the list
 				d->route[numRoutes] = _thisAddress;
-				tmpMessageLen++;
+				// tmpMessageLen++;
 				// Have to impersonate the source
 				// REVISIT: if this fails what can we do?
 				RHRouter::sendtoFromSourceWait (_tmpMessage, tmpMessageLen, RH_BROADCAST_ADDRESS, _source);
-				// Serial.println("Re-boardcast back");
+				// Serial.println("Reboardcast");
 			}
 		}
-		// Serial.println("(BB)");
 	}
 	return false;
 }
