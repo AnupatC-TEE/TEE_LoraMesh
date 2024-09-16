@@ -4,7 +4,6 @@
 
 #if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_SERIAL)
 TONY_LORA TonyLORA;
-// extern HardwareSerial LoRaSerial(NULL);
 #endif
 
 TONY_LORA::TONY_LORA()
@@ -81,7 +80,7 @@ void TONY_LORA::setSlot(uint8_t slot)
 	LoRaSerial = new HardwareSerial(_uart_nr);
 	LoRaSerial->begin(115200,SERIAL_8N1,pin_RX,pin_TX);
 
-	Serial.println("Module init success");
+	// Serial.println("Module init success");
 }
 
 bool TONY_LORA::begin(String deveui, String appeui, String appkey)
@@ -207,13 +206,11 @@ bool TONY_LORA::getSyncWord(char* syncword, uint16_t timeout)
 bool TONY_LORA::sendAndGet(String cmd, char* res, uint16_t timeout) {
 	LoRaSerial->print(cmd);
 	if(getRespond(res, timeout)) return 1;
-	// else
 	return 0;
 }
 
 void TONY_LORA::getModuleInfo() {
 	char response[50];
-	// char appeui[50]
 	sendAndGet("sip get_hw_model", response, 1000);
 	Serial.print("HW model: ");
 	Serial.println(response);
@@ -622,7 +619,7 @@ String TONY_LORA::decodingRawMsg(String msg) {
 		_lastRssi = String(buff[2]).toInt();
 		_lastSNR = String(buff[3]).toInt();
 	}
-	// Serial.println(lastMSG);
+
 	return lastMSG;
 }
 
@@ -685,7 +682,7 @@ bool TONY_LORA::init(uint8_t slot, int bandwidth, String codingRate, int frequen
     setSlot(slot);
 	setRxContinuous(0);
 	reset();
-    getModuleInfo();
+    // getModuleInfo();
 
 	bw = setSignalBandwidth(bandwidth);
 	cr = setCodingRate(codingRate);
@@ -697,32 +694,30 @@ bool TONY_LORA::init(uint8_t slot, int bandwidth, String codingRate, int frequen
 
 bool TONY_LORA::send(const uint8_t* dataT, uint8_t len) {
     if(len > MAX_RX_BUF_LEN) return false;
+	// Serial.println((char*)dataT);
 
-	// uint8_t real_len = String((char*)dataT).length();
+	//Stop receiving message to be able to send message
 	holdRx();
 
 	String data_out = "";
-	// Serial.println((char*)dataT);
 
 	//set msg header
 	data_out += (char)_txHeaderTo;
-	// Serial.println((int)_txHeaderTo);
 	data_out += (char)_txHeaderFrom;
-	// Serial.println((int)_txHeaderFrom);
 	data_out += (char)_txHeaderId;
-	// Serial.println((int)_txHeaderId);
 	data_out += (char)_txHeaderFlags;
-	// Serial.println("Header only");
-	data_out = stringToHex(data_out);
+	data_out = stringToHex(data_out); // Converting first 4 byte to hexdicimal string
 
+	// Converting data to hex string
 	for (int i = 0; i < len; i++) {
 		if (dataT[i] < 0x10) data_out += "0";  // Add leading zero for single hex digits
 		data_out += String(dataT[i], HEX);
 	}
 	// Serial.println(data_out.length());
-	int lastNonZeroIndex = data_out.length() - 1;
+
   
 	// Iterate backwards through the string to find the last non-zero character
+	int lastNonZeroIndex = data_out.length() - 1;
 	for (int i = lastNonZeroIndex; i >= 0; i--) {
 		if (data_out[i] != '0') {
 		lastNonZeroIndex = i;
@@ -763,17 +758,8 @@ void TONY_LORA::handleRxMsg() {
 		if(String(_rx_buf) == "") return;
 		TonyLORA.decodingRawMsg(String(_rx_buf));
 	}
-	// Serial.print("raw: ");
-	// Serial.println(lastMSG);
-	// Serial.println(decode_data);
-	
 
 	hexToUint8(lastMSG,_rx_data_buf);
-	// data = hexToString(lastMSG).substring(4);
-	// data = hexToString(lastMSG);
-	// Serial.println(header);
-	// Serial.println(data);
-
 
 	validateRxBuf();
 }
@@ -785,13 +771,15 @@ bool TONY_LORA::recv(uint8_t* respond, uint8_t* len) {
 
 	if (respond && len) memcpy(respond, _rx_data_buf+4, sizeof(_rx_data_buf));
 
-	// Serial.println("Byte Array:");
-  	// for (int i = 0; i < sizeof(data); i++) {
-	// 	Serial.print("0x");
-	// 	if (respond[i] < 0x10) Serial.print("0");
-	// 	Serial.print(respond[i], HEX);
-	// 	Serial.print(" ");
-	// }
+	if(debug) {
+		Serial.println("Byte Array:");
+		for (int i = 0; i < sizeof(data); i++) {
+			Serial.print("0x");
+			if (respond[i] < 0x10) Serial.print("0");
+			Serial.print(respond[i], HEX);
+			Serial.print(" ");
+		}
+	}
 
 	clearRxBuf();
     return true;
@@ -803,19 +791,13 @@ void TONY_LORA::validateRxBuf() {
 	_rxHeaderFrom  = (uint8_t)header[1];
 	_rxHeaderId    = (uint8_t)header[2];
 	_rxHeaderFlags = (uint8_t)header[3];
-	// Serial.print("Header to:");
-	// Serial.println((int)_rxHeaderTo);
-	// Serial.print("This:");
-	// Serial.println((int)_thisAddress);
-	// Serial.println((int)RH_BROADCAST_ADDRESS);
+
 	if (_promiscuous ||
 			_rxHeaderTo == _thisAddress ||
 			_rxHeaderTo == RH_BROADCAST_ADDRESS)
 	{
-		// setRxLedState(true);
 		_rxGood++;
 		_rxBufValid = true;
-		// Serial.println("Rx good");
 		return;
 	}
 }
@@ -823,10 +805,9 @@ void TONY_LORA::validateRxBuf() {
 void TONY_LORA::clearRxBuf()
 {
 	_rxBufValid = false;
-	// for(size_t i = 0; i < sizeof(_rx_data_buf); ++i) _rx_data_buf[i] = 0;
 	memset(_rx_data_buf, 0, sizeof(_rx_data_buf));
-	Serial.print("Clear buffer:");
-	Serial.println((char*)_rx_data_buf);
+	// Serial.print("Clear buffer:");
+	// Serial.println((char*)_rx_data_buf);
 	data = "";
 
 }
