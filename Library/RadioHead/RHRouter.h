@@ -30,10 +30,10 @@
 
 // These allow us to define a simulated network topology for testing purposes
 // See RHRouter.cpp for details
-#define RH_TEST_NETWORK 1
-//#define RH_TEST_NETWORK 2
-//#define RH_TEST_NETWORK 3
-//#define RH_TEST_NETWORK 4
+// #define RH_TEST_NETWORK 1
+// #define RH_TEST_NETWORK 2
+#define RH_TEST_NETWORK 3
+// #define RH_TEST_NETWORK 4
 
 /////////////////////////////////////////////////////////////////////
 /// \class RHRouter RHRouter.h <RHRouter.h>

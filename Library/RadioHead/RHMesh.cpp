@@ -188,8 +188,8 @@ bool RHMesh::recvfromAck (uint8_t* buf, uint8_t* len, uint8_t* source, uint8_t* 
 				 && tmpMessageLen > 1
 				 && p->msgType == RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_REQUEST)
 		{
-			Serial.println("Type Discovery");
-			Serial.println("(1)");
+			// Serial.println("Type Discovery");
+			// Serial.println("(1)");
 			MeshRouteDiscoveryMessage* d = (MeshRouteDiscoveryMessage*) p;
 			// Handle Route discovery requests
 			// Message is an array of node addresses the route request has already passed through
@@ -197,33 +197,39 @@ bool RHMesh::recvfromAck (uint8_t* buf, uint8_t* len, uint8_t* source, uint8_t* 
 			if (_source == _thisAddress)
 				return false;
 
-			uint8_t numRoutes = tmpMessageLen - sizeof (MeshMessageHeader) - 2;
+			// uint8_t numRoutes = tmpMessageLen - sizeof (MeshMessageHeader) - 2;
+			uint8_t numRoutes = 0;
+			for(int n=0; n < RH_DEFAULT_MAX_HOPS; n++){
+				if(d->route[n] == 0) break;
+				numRoutes = n+1;
+			}
 			Serial.println((int)numRoutes);
 			uint8_t i;
 			// Are we already mentioned?
 			for (i = 0; i < numRoutes; i++)
 				if (d->route[i] == _thisAddress){
-					Serial.println("Skip past this node");
+					// Serial.println("Skip past this node");
 					return false; // Already been through us. Discard
 				}
 
-			Serial.println("(2)");
+			// Serial.println("(2)");
 			addRouteTo (_source, headerFrom()); // The originator needs to be added regardless of node type
 
 			// Hasnt been past us yet, record routes back to the earlier nodes
 			// No need to waste memory if we are not participating in routing
 			if (_isa_router)
 			{
-				Serial.println("(3)");
+				// Serial.println("(3)");
 				for (i = 0; i < numRoutes; i++){
 					if(d->route[i] == 0) break;
 					addRouteTo (d->route[i], headerFrom());
 				}
 			}
+			Serial.print("Num route: ");
 			Serial.println(i);
 			if (isPhysicalAddress (&d->dest, d->destlen))
 			{
-				Serial.println("(a)");
+				// Serial.println("(a)");
 				// This route discovery is for us. Unicast the whole route back to the originator
 				// as a RH_MESH_MESSAGE_TYPE_ROUTE_DISCOVERY_RESPONSE
 				// We are certain to have a route there, because we just got it
@@ -233,13 +239,12 @@ bool RHMesh::recvfromAck (uint8_t* buf, uint8_t* len, uint8_t* source, uint8_t* 
 			}
 			else if ( (i < _max_hops) && _isa_router)
 			{
-				Serial.println("(b)");
 				// Its for someone else, rebroadcast it, after adding ourselves to the list
 				d->route[numRoutes] = _thisAddress;
-				// tmpMessageLen++;
+				// tmpMessageLen++; // maybe need to disable????
 				// Have to impersonate the source
 				// REVISIT: if this fails what can we do?
-				RHRouter::sendtoFromSourceWait (_tmpMessage, tmpMessageLen, RH_BROADCAST_ADDRESS, _source);
+				RHRouter::sendtoFromSourceWait ((uint8_t*) d, tmpMessageLen, RH_BROADCAST_ADDRESS, _source);
 				// Serial.println("Reboardcast");
 			}
 		}

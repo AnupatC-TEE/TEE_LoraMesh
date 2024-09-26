@@ -11,6 +11,8 @@
 
 #define MAX_RX_BUF_LEN 255
 
+#define RH_S76S_HEADER_LEN 4
+
 class TONY_LORA : public RHGenericDriver
 {
 	public:
@@ -18,6 +20,10 @@ class TONY_LORA : public RHGenericDriver
 		~TONY_LORA() {
 		};
 		void setSlot(uint8_t slot);
+
+		/* low power */
+		// bool sleep();
+		// bool wakeUp();
 		bool reset(void);
 
 		/* WAN MODE */
@@ -111,8 +117,7 @@ class TONY_LORA : public RHGenericDriver
 
 		bool _rx_sta = 0;
 		bool _tx_over_con = 0;
-
-		bool debug = false;
+		uint8_t _bufLen;
 		
 	protected:
 
@@ -120,6 +125,7 @@ class TONY_LORA : public RHGenericDriver
 
 #if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_SERIAL)
 extern TONY_LORA TonyLORA;
+// extern HardwareSerial LoRaSerial;
 #endif
 
 #endif

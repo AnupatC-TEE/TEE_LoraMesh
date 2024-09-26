@@ -183,6 +183,9 @@ uint8_t RHRouter::sendtoFromSourceWait (uint8_t* buf, uint8_t len, uint8_t dest,
 	_tmpMessage.header.flags = flags;
 	memcpy (_tmpMessage.data, buf, len);
 
+	// Serial.println("RH route, fsw");
+	// Serial.println(sizeof (RoutedMessageHeader) + len);
+
 	return route (&_tmpMessage, sizeof (RoutedMessageHeader) + len);
 }
 
@@ -206,7 +209,8 @@ uint8_t RHRouter::route (RoutedMessage* message, uint8_t messageLen)
 			return RH_ROUTER_ERROR_NO_ROUTE;
 		next_hop = route->next_hop;
 	}
-
+	// Serial.println("RH route");
+	// Serial.println(messageLen);
 	if (!RHReliableDatagram::sendtoWait ( (uint8_t*) message, messageLen, next_hop))
 		return RH_ROUTER_ERROR_UNABLE_TO_DELIVER;
 
