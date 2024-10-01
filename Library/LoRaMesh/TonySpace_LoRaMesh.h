@@ -103,6 +103,8 @@ class TONY_LORA : public RHGenericDriver
 		String stringToHex(String input);
 		void hexToUint8(const String &hexInput, uint8_t *outputArray);
 
+		bool debug_mode = false;
+
 	private:
 		char _rx_buf[100] = "";
 		uint8_t _rx_data_buf[MAX_RX_BUF_LEN] = "";

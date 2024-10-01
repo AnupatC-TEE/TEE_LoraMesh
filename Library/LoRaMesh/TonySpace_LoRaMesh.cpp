@@ -704,17 +704,19 @@ bool TONY_LORA::send(const uint8_t* dataT, uint8_t len) {
 	holdRx();
 
 	String data_out = "";
-	// Serial.println((char*)dataT);
-	// Serial.print("Input len:");
-	// Serial.println(len);
-	// Serial.println("Byte Array:");
-  	// for (int i = 0; i < sizeof(dataT); i++) {
-	// 	Serial.print("0x");
-	// 	if (dataT[i] < 0x10) Serial.print("0");
-	// 	Serial.print(dataT[i], HEX);
-	// 	Serial.print(" ");
-	// }
-	// Serial.println();
+	if(debug_mode == true) {
+		Serial.println((char*)dataT);
+		Serial.print("Input len:");
+		Serial.println(len);
+		Serial.println("Byte Array:");
+		for (int i = 0; i < sizeof(dataT); i++) {
+			Serial.print("0x");
+			if (dataT[i] < 0x10) Serial.print("0");
+			Serial.print(dataT[i], HEX);
+			Serial.print(" ");
+		}
+		Serial.println();
+	}
 
 	//set msg header
 	data_out += (char)_txHeaderTo;
@@ -731,7 +733,6 @@ bool TONY_LORA::send(const uint8_t* dataT, uint8_t len) {
 		if (dataT[i] < 0x10) data_out += "0";  // Add leading zero for single hex digits
 		data_out += String(dataT[i], HEX);
 	}
-	// Serial.println(data_out.length());
 	int lastNonZeroIndex = data_out.length() - 1;
   
 	// Iterate backwards through the string to find the last non-zero character
@@ -745,8 +746,10 @@ bool TONY_LORA::send(const uint8_t* dataT, uint8_t len) {
 	// Extract the substring from the beginning up to the last non-zero index
 	data_out = data_out.substring(0, lastNonZeroIndex + 1);
 
-	Serial.println(data_out);
-	// Serial.println(data_out.length());
+	if(debug_mode == true) {
+		Serial.println(data_out);
+		Serial.println(data_out.length());
+	}
 	bool res = sendBrodcast(data_out, 4000);
 
 	delay(200); //Mysterious delay???? if not include this line will cause early heap overflow // don't touch it magic number
@@ -763,7 +766,7 @@ void TONY_LORA::handleRxMsg() {
 	if(_rx_con == "enable") {
 		if(msgAvailable()){
 			buf = TonyLORA.LoRaSerial->readString();
-			Serial.println(buf);
+			if(debug_mode == true) Serial.println(buf);
 			decodingRawCon(buf);
 		} else {
 			return;
@@ -844,10 +847,11 @@ void TONY_LORA::validateRxBuf() {
 void TONY_LORA::clearRxBuf()
 {
 	_rxBufValid = false;
-	// for(size_t i = 0; i < sizeof(_rx_data_buf); ++i) _rx_data_buf[i] = 0;
 	memset(_rx_data_buf, 0, sizeof(_rx_data_buf));
-	Serial.print("Clear buffer:");
-	Serial.println((char*)_rx_data_buf);
+	if(debug_mode == true) {
+		Serial.print("Clear buffer:");
+		Serial.println((char*)_rx_data_buf);
+	}
 	data = "";
 
 }
